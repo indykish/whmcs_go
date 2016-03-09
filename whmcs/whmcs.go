@@ -17,6 +17,8 @@
 package whmcs
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -130,6 +132,10 @@ func (c *Client) NewWRequest(dat map[string]string, action string) (*WRequest, e
 		dat[ACTION] = action
 		dat[RESPONSETYPE] = "json"
 	}
+
+	if len(strings.TrimSpace(dat[PASSWORD])) > 0 {
+		dat[PASSWORD] = md5Hash(dat[PASSWORD])
+	}
 	return &WRequest{url: u, data: addFormValues(dat)}, nil
 }
 
@@ -156,8 +162,7 @@ func (c *Client) Do(req WRequest, v interface{}) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
- fmt.Println("--- " + url.String())
-	resp, err := c.client.PostForm(url.String()+"?accesskey=team4megam", *req.data)
+	resp, err := c.client.PostForm(url.String(), *req.data)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +170,7 @@ func (c *Client) Do(req WRequest, v interface{}) (*Response, error) {
 	defer resp.Body.Close()
 
 	response := newResponse(resp)
-
+	fmt.Printf("-- %#v\n", resp)
 	err = CheckResponse(resp)
 	if err != nil {
 		// even though there was an error, we still return the response
@@ -208,11 +213,14 @@ func (c *Client) auth(w WRequest) (*url.URL, error) {
 	if !(w.howzzat(ACTION)) {
 		return nil, ErrActionNotFound
 	}
-	//patch if you sent access_key
-	if w.howzzat(ACCESSKEY) {
-		w.url.Query().Set(ACCESSKEY, w.data.Get(ACCESSKEY))
-	}
+
 	return w.url, nil
+}
+
+func md5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 /*

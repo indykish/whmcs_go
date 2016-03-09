@@ -18,8 +18,6 @@ package whmcs
 
 import (
 	"bytes"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -101,15 +99,15 @@ func (s *S) TestAccount(c *check.C) {
 	addr := strings.Join([]string{"103.56.92.20", strconv.Itoa(80)}, ":")
 	_, err := net.Dial("tcp", addr)
 	c.Assert(err, check.IsNil)
-	//	if err == nil {
-	//		c.Skip("WHMCS isn't running. You can't rest it live.")
-	//	}
-	//	defer conn.Close()
+	if err == nil {
+		c.Skip("WHMCS isn't running. You can't rest it live.")
+	}
+	//defer conn.Close()
 
 	client := NewClient(nil, "http://103.56.92.20/whmcs/")
 	a := map[string]string{
 		"username":    "megamsys",
-		"password":    GetMD5Hash("megam"),
+		"password":    "megam",
 		"accesskey":   "team4megam",
 		"firstname":   "Jonathan",
 		"lastname":    "Philipos",
@@ -124,10 +122,4 @@ func (s *S) TestAccount(c *check.C) {
 	}
 	_, _, err = client.Accounts.Create(a)
 	c.Assert(err, check.IsNil)
-}
-
-func GetMD5Hash(text string) string {
-    hasher := md5.New()
-    hasher.Write([]byte(text))
-    return hex.EncodeToString(hasher.Sum(nil))
 }
